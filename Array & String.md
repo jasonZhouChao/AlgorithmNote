@@ -6,8 +6,13 @@ Index:
 -[Find Min K](#Anchor3)  
 -[Find Number occurs half times](#Anchor4)  
 -[Leetcode:Median of Two Sorted Arrays](#Anchor5)  
--[Leetcode:Longest Substring Without Repeating Characters](#Anchor6)  
--[Leetcode:Substring with Concatenation of All Words](#Anchor7)  
+-[Leetcode:Longest Substring Without Repeating Characters](#Anchor6)   
+-[Leetcode:Substring with Concatenation of All Words](#Anchor7)   
+-[LeetCode:Next Permutation](#Anchor8)  
+-[LeetCode:Permutation Sequence](#Anchor9)  
+-[Leetcode:Multiply Strings](#Anchor10)  
+-[Leetcode:Implement strStr()](#Anchor11)  
+-[Leetcode:String to Integer (atoi)](#Anchor12)  
 
 -------
 <a name="Anchor1" id="Anchor1"></a>
@@ -368,7 +373,7 @@ public:
         int n = s.size();
         if(n == 0) return ret;
         int fast = 0, slow = 0;
-        unordered_set<char> charDict;
+        unordered_set< char > charDict;
         while(fast <= n-1){
             if(charDict.find(s[fast]) != charDict.end()){
                 int len = fast - slow;
@@ -387,7 +392,9 @@ public:
 ```
 
 -------
+
 <a name="Anchor7" id="Anchor7"></a>
+
 -**[Leetcode:Substring with Concatenation of All Words](http://oj.leetcode.com/problems/substring-with-concatenation-of-all-words/)**([Back to Index](#AnchorIndex))  
 
 一个比较直观的解法（不一定最优）。维护一个< 单词，个数 >map，假设L中单词长度为wordLen，每次从S中截取L.size()*wordLen的子串，判断该子串是否能完全消耗map中的单词，如果可以，则该起始位置为有效解；如果不能，则将起始位置向后推进wordLen个位置。  
@@ -433,6 +440,202 @@ public:
             }
         }
         return ret;
+    }
+};
+```
+
+-------
+<a name="Anchor8" id="Anchor8"></a>
+-**[LeetCode:Next Permutation](http://oj.leetcode.com/problems/next-permutation/)**([Back to Index](#AnchorIndex))  
+
+高效的方法求下一个Permutation。定义单调递增为最小的序列（如1,2,3,4,5），单调递减为最大的序列（如5,4,3,2,1），序列1,2,3,4,5的下一个Permutation为1,2,3,5,4，序列5,4,3,2,1的下一个Permutation为1,2,3,4,5。
+
+可以这样理解该方法，想象当前数列形成一个开口向下的折线，折线的左半部分单调递增，折线的右半部分单调递减。对于右半单调递减部分（包含顶点），已经没有办法调换其中的数字使得整体数列变大，因为其本身已经是右半部分子序列的最大情形，因此通过交换左半递增部分和右半递减部分来实现，交换的两数为**折线顶点左侧的第一个数x**和**右半递减部分第一个大于x的数y**，这样保证了产生了比原来更大的序列（因为y > x）。为了完成目标，还需要对原右半递减部分进行升序排序，保证产生了恰比原来大的序列（选用了第一个大于x的y且右半部分经过排序成为右半部分的最小序列）。
+
+这里可以用倒置右半部分代替排序，原因是y是第一个大于x的数，交换这两个数不会打破右半部分的单调递减特性。  
+
+注意，该方法适用于具有重复元素的数组生成下一个排列。
+```cpp
+class Solution {
+public:
+    void nextPermutation(vector<int> &num) {
+        for(int i = num.size()-1; i>=1; i--){//改变右起的第一个升序对可以使序列变大
+            if(num[i]>num[i-1]){//num[i-1]和num[i]是右起第一个升序对，此时下标从i到size()-1的元素是降序
+                for(int j = num.size()-1; j>=i; j--){
+                    if(num[j]>num[i-1]){
+                        swap(num[j], num[i-1]);
+                        reverse(num.begin()+i,num.end());
+                        return;
+                    }
+                }
+            }
+        }
+        reverse(num.begin(),num.end());//说明是降序，直接反转为升序为最小的排列
+    }
+};
+``` 
+
+-------
+<a name="Anchor9" id="Anchor9"></a>
+-**[LeetCode:Permutation Sequence](http://oj.leetcode.com/problems/permutation-sequence/)**([Back to Index](#AnchorIndex))  
+
+此题要求寻找给定位数的Permutation的第k个序列，以单调递增序列（如1,2,3,4,5）作为第1个序列。可以应用[Next Permutation](#Anchor8)方法，但效率太低。  
+
+此处使用另外一种方法求解。*TODO*:算法说明。  
+
+注意，给定的k可能超过n！。
+
+```cpp
+string getPermutation(int n, int k) {
+    int o[n+1];
+    o[0]=1;
+    for(int i=1;i<=n;i++)
+        o[i]=o[i-1]*i;
+    vector<int> v;
+    string s = "";
+    if(k>o[n])
+        return s;
+    for(int i=1;i<=n;i++)
+        v.push_back(i);
+    while(n>0){
+        int cnt = (k-1)/o[n-1];
+        s+=v[cnt]+'0';
+        v.erase(v.begin()+cnt);
+        k=k%o[n-1];
+        if(k==0)
+            k=o[n-1];
+        n--;
+    }    
+    return s;
+}
+```
+
+-------
+<a name="Anchor10" id="Anchor10"></a>
+-**[Leetcode:Multiply Strings](http://oj.leetcode.com/problems/multiply-strings/)**([Back to Index](#AnchorIndex))  
+
+限定此题的输入为两个正整数字符串，要求这两个正整数的乘积。思路比较清晰：
+    
+    a) 对num1逆序
+    b) 对num2逆序
+    c) res[i+j] += num1[i] * num2[j];
+    d) res[i+j+1] += res[i+j] / 10;
+    e) res[i+j] = res[i+j] % 10; 
+
+注意最后检查结果是否全为0，并去除结果的前导0。
+
+```cpp
+class Solution {
+public:
+    string multiply(string num1, string num2) {
+        int len1 = num1.length();
+        int len2 = num2.length();
+        vector<int> res(len1+len2);
+        vector<int> n1;
+        vector<int> n2;
+        for(int i=num1.length()-1;i>=0;--i)
+            n1.push_back(num1[i]-'0');
+        for(int i=num2.length()-1;i>=0;--i)
+            n2.push_back(num2[i]-'0');
+        for(int i=0;i<n1.size();++i){
+            for(int j=0;j<n2.size();++j){
+                res[i+j] += n1[i]*n2[j];
+                res[i+j+1] += res[i+j]/10;
+                res[i+j] = res[i+j]%10;
+            }
+        }
+        string ret;
+        int i=res.size()-1;
+        while(res[i]==0 && i>=0)
+            --i;
+        if(i<0)
+            return "0";
+        while(i>=0){
+            ret.push_back('0'+res[i]-0);
+            --i;
+        }
+        return ret;
+    }
+};
+```
+
+-------
+<a name="Anchor11" id="Anchor11"></a>
+-**[Leetcode:Implement strStr()](oj.leetcode.com/problems/implement-strstr/)**([Back to Index](#AnchorIndex))  
+
+haystack为主串，needle为匹配串。思路比较简单：每次选取主串中的一个字符作为主串的起始匹配位置，选取子串的头作为另一个起始匹配位置，匹配跳出条件：
+    
+    * 对应位置字符不同
+    * 两个字符串的其中一个或两个均到达'\0'位置
+
+可以这些跳出情况，只需要判断跳出时needle是否已经到达'\0'位置即可，如果到达，则说明找到该子串，返回该子串在主串中的头字符位置即可。
+
+```cpp
+class Solution {
+public:
+    char *strStr(char *haystack, char *needle) {
+        int len1 = strlen(haystack);
+        int len2 = strlen(needle);
+        if (len1 < len2)
+            return NULL;
+        if (len2 == 0)
+            return haystack;
+        char* p2 = haystack;
+        for (int i = 0; i < len1 - len2 + 1; i++) {
+            char* p1 = needle;
+            char* p_old = (char*) p2;
+            while (*p1 && *p2) {
+                if (*p1 == *p2) {
+                    p1++;
+                    p2++;
+                } else
+                    break;
+            }
+            if (!*p1)
+                return p_old;
+            p2 = p_old + 1;
+        }
+        return NULL;
+    }
+};
+```
+
+-------
+<a name="Anchor12" id="Anchor12"></a>
+-**[Leetcode:String to Integer (atoi)](oj.leetcode.com/problems/string-to-integer-atoi/) **([Back to Index](#AnchorIndex))  
+
+注意判断先导空格，符号和溢出情况。  
+
+```cpp
+class Solution {
+public:
+
+    int atoi(const char *str) {
+        int i = 0;
+        int len = strlen(str);
+        bool positive = true;
+        while (str[i] == ' ' && i < len)
+            i++;
+        if (str[i] == '+')
+            i++;
+        else if (str[i] == '-') {
+            positive = false;
+            i++;
+        }
+        long long sum = 0;
+        for (; i < len; i++) {
+            if (str[i] < '0' || str[i] > '9')
+                break;
+            sum = sum * 10 + str[i] - '0';
+        }
+        sum = positive == true ? sum : -1 * sum;
+        int min = 0x80000000;
+        int max = 0x7fffffff;
+        if (sum < min)
+            return 0x80000000;
+        else if (sum > max)
+            return 0x7fffffff;
+        return (int) sum;
     }
 };
 ```
